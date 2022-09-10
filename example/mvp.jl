@@ -1,19 +1,19 @@
-module MinimumGenArviz
+module MinimumArvizGen
 
 using Gen
 using ArviZ
-using GenArviZ
+using ArvizGen
 
-@gen function submodel()
-    y ~ normal(0.0, 1.0)
-    return y
-end
+#@gen function submodel()
+#    y ~ normal(0.0, 1.0)
+#    return y
+#end
 
 @gen function model()
     x ~ normal(0.0, 1.0)
     y ~ normal(x, 1.0)
-    z ~ submodel()
-    return z
+    #z ~ submodel()
+    return y
 end
 
 tr = simulate(model, ())
