@@ -10,22 +10,12 @@ export traverse
 # and a flat list of values at those addresses.
 #####
 
-struct ZeroCost{T}
-    data::T
-end
-
-function unbox(zc::ZeroCost{T}) where {T}
-    return zc.data
-end
-
-function traverse!(flat::Vector, typeset::Set, par::Tuple, chm::Gen.ChoiceMap)
+function traverse!(flat::Vector, par::Tuple, chm::Gen.ChoiceMap)
     for (k, v) in get_values_shallow(chm)
-        push!(typeset, typeof(v))
-        push!(flat, ((par..., k), ZeroCost(v)))
+        push!(flat, ((par..., k), v))
     end
-
     for (p, sub) in get_submaps_shallow(chm)
-        traverse!(flat, typeset, (par..., p), sub)
+        traverse!(flat, (par..., p), sub)
     end
 end
 
@@ -43,23 +33,16 @@ addresses), with key the type of the choice map value at the corresponding
 address, and value the value.
 """
 function traverse(chm::Gen.ChoiceMap)
-    typeset = Set(Type[])
-    flat = Tuple{Any,ZeroCost}[]
+    flat = Any[]
     for (k, v) in get_values_shallow(chm)
-        push!(typeset, typeof(v))
-        push!(flat, ((k,), ZeroCost(v)))
+        push!(flat, ((k,), v))
     end
     for (par, sub) in get_submaps_shallow(chm)
-        traverse!(flat, typeset, (par,), sub)
+        traverse!(flat, (par,), sub)
     end
-    ts = collect(typeset)
     addrs = map(first, flat)
     vs = map(second, flat)
-    sparse = map(vs) do v
-        v = unbox(v)
-        (; (typeof(v) <: t ? Symbol(t) => v : Symbol(t) => missing for t in ts)...)
-    end
-    return addrs, sparse
+    return addrs, vs
 end
 
 """
@@ -78,6 +61,16 @@ function traverse(tr::Gen.Trace)
     addrs, choices = traverse(get_choices(tr))
     metadata = (; gen_fn, score, ret, args)
     return metadata, addrs, choices
+end
+
+function traverse(trs::Vector{T}) where T <: Gen.Trace
+    vs = map(trs) do tr
+        traverse(tr)
+    end
+    metadata = map(x -> x[1], vs)
+    addrs = map(x -> x[2], vs)
+    choices = map(x -> x[3], vs)
+    return metadata, vcat(unique(addrs)...), mapreduce(permutedims, vcat, choices)
 end
 
 end # module
