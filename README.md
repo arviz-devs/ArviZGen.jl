@@ -14,7 +14,7 @@ Specifically, this sort of model is supported:
 end
 ```
 
-But this sort of model is not:
+But this sort of model is not supported right now:
 
 ```julia
 @gen function submodel()
