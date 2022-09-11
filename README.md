@@ -39,6 +39,7 @@ Neither is this one:
       z ~ submodel()
     else:
       y ~ normal(x, 1.0)
-    return y
+    end
+    return x
 end
 ```
