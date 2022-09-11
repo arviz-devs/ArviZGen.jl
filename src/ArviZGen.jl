@@ -10,12 +10,6 @@ export traverse
 # and a flat list of values at those addresses.
 #####
 
-# A new interface which users can implement for their `T::Trace`
-# type to extract serializable arguments.
-function get_serializable_args(tr::T) where T <: Gen.Trace
-    return Gen.get_args(tr)
-end
-
 struct ZeroCost{T}
     data::T
 end
@@ -39,6 +33,15 @@ function second(x)
     return x[2]
 end
 
+"""
+    traverse(chm::Gen.ChoiceMap)
+
+Walks a `chm :: Gen.ChoiceMap`, and returns a `Tuple`, whose
+first element is a flat list of addresses in the choice map, and whose
+second element is a list of `NamedTuple` instances (in the same order as the
+addresses), with key the type of the choice map value at the corresponding
+address, and value the value.
+"""
 function traverse(chm::Gen.ChoiceMap)
     typeset = Set(Type[])
     flat = Tuple{Any,ZeroCost}[]
@@ -59,9 +62,17 @@ function traverse(chm::Gen.ChoiceMap)
     return addrs, sparse
 end
 
+"""
+    traverse(tr::Gen.Trace)
+
+Similar to `traverse(chm::Gen.ChoiceMap)`, but returns a `Tuple` with 3 elements,
+whose first element is inference metadata from the `tr::Gen.Trace`.
+
+The other elements are the same as `traverse(chm::Gen.ChoiceMap)`.
+"""
 function traverse(tr::Gen.Trace)
     ret = get_retval(tr)
-    args = get_serializable_args(tr)
+    args = get_args(tr)
     score = get_score(tr)
     gen_fn = repr(get_gen_fn(tr))
     addrs, choices = traverse(get_choices(tr))
